@@ -20,6 +20,7 @@
 Module that knows how to connect to the AtomPub Binding of a CMIS repo
 '''
 
+import base64
 from urllib import urlencode
 from urllib2 import HTTPBasicAuthHandler, \
                     HTTPPasswordMgrWithDefaultRealm, \
@@ -274,13 +275,17 @@ class RESTService(object):
                 self.logger.debug('Adding header:%s:%s' % (k, v))
                 request.add_header(k, v)
 
+        # Changed do authentication injection because of CMIS-961
         # create a password manager
-        passwordManager = HTTPPasswordMgrWithDefaultRealm()
-        passwordManager.add_password(None, url, username, password)
+        # passwordManager = HTTPPasswordMgrWithDefaultRealm()
+        # passwordManager.add_password(None, url, username, password)
+
+        base64auth = base64.encode('%s:%s' % (username, password))
+        request.add_header("Authorization", "Basic %s" % base64auth)
 
         opener = build_opener(SmartRedirectHandler(),
-                              DefaultErrorHandler(),
-                              ContextualBasicAuthHandler(passwordManager))
+                              DefaultErrorHandler())
+                              #ContextualBasicAuthHandler(passwordManager))
 
         try:
             return opener.open(request)
